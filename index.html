@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calm Quest</title>
+  <style>
+    :root{
+      --bg:#0f1220;--panel:#161a2e;--muted:#8a90a7;--text:#e8ebff;--accent:#7aa2ff;--accent2:#b38bff;--good:#86efac;--warn:#facc15;--bad:#fca5a5;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Inter,Arial,sans-serif;background:linear-gradient(160deg,#0d1020,#0b1120 55%,#0a0d1a);color:var(--text);}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:1.5rem;margin:0;letter-spacing:.3px}
+    .grid{display:grid;grid-template-columns:1.3fr .9fr;gap:18px}
+    .card{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:14px;box-shadow:var(--shadow)}
+    .card h2{font-size:1rem;margin:0 0 10px 0;color:#dbe5ff;letter-spacing:.3px}
+    .card .head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .card .body{padding:14px}
+    .muted{color:var(--muted)}
+    button, input, select, textarea{font:inherit;color:inherit}
+    button{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#0b0f1a;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(122,162,255,.5)}
+    button.small{padding:6px 10px;border-radius:8px;font-size:.9rem}
+    input[type="text"], input[type="number"], textarea{background:#0c1022;color:var(--text);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px;width:100%}
+    .row{display:flex;gap:10px;align-items:center}
+    .row.wrap{flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:#0c1024;border:1px solid rgba(255,255,255,.07);padding:6px 10px;border-radius:999px;color:#c8d3ff}
+    .badge .dot{width:8px;height:8px;border-radius:50%}
+    .dot.good{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+    .stat{display:flex;align-items:center;gap:8px}
+    .stat b{font-size:1.1rem}
+    .list{display:grid;gap:10px}
+    .item{background:#0b1024;border:1px solid rgba(255,255,255,.06);padding:10px;border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+    .item .left{display:flex;align-items:center;gap:10px}
+    .item .title{font-weight:600}
+    .pill{padding:4px 8px;border-radius:999px;background:#0e1430;border:1px solid rgba(255,255,255,.08);font-size:.85rem;color:#c6d0ff}
+    .sub{font-size:.9rem;color:#aab3d7}
+    .sep{height:10px}
+    .footer{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+    .progress{height:10px;background:#0b0f22;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+    .bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%}
+    .inline-form{display:grid;grid-template-columns:1.1fr 120px 120px auto;gap:10px}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.92rem}
+    .tiny{font-size:.85rem;color:#9aa4c8}
+    .right{margin-left:auto}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🧭 Calm Quest</h1>
+      <div class="row wrap">
+        <span class="badge"><span class="dot good"></span> Regulated = body first, story later</span>
+        <button id="exportBtn" class="ghost small">Export JSON</button>
+        <button id="importBtn" class="ghost small">Import JSON</button>
+        <input id="fileInput" type="file" accept="application/json" style="display:none" />
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left column: Tasks & Actions -->
+      <section class="card">
+        <div class="head">
+          <h2>🎯 Your Quests</h2>
+          <button id="addQuestBtn" class="small">Add Quest</button>
+        </div>
+        <div class="body">
+          <div id="questList" class="list"></div>
+          <div class="sep"></div>
+          <div class="tiny">Tip: Give each quest a small XP value (5–15). Big actions can be 20–50 XP.
+          </div>
+        </div>
+      </section>
+
+      <!-- Right column: Stats / Quick actions -->
+      <aside class="card">
+        <div class="head">
+          <h2>📈 Progress</h2>
+          <button id="resetBtn" class="ghost small">Soft Reset</button>
+        </div>
+        <div class="body">
+          <div class="row" style="justify-content:space-between">
+            <div class="stat">⭐ XP <b id="xp">0</b></div>
+            <div class="stat">🔼 Level <b id="level">1</b></div>
+            <div class="stat">🔥 Streak <b id="streak">0</b></div>
+          </div>
+          <div class="sep"></div>
+          <div class="progress"><div id="xpBar" class="bar"></div></div>
+          <div class="sep"></div>
+          <div class="list" id="quickActions"></div>
+          <div class="footer">
+            <button id="offDutyBtn">🛑 Go Off Duty (10m)</button>
+            <button id="bossBtn" class="ghost">🌀 Log Boss Fight</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Log & Notes -->
+      <section class="card" style="grid-column:1 / -1">
+        <div class="head">
+          <h2>📜 Log</h2>
+          <div class="row">
+            <span class="pill">Today: <span id="today"></span></span>
+            <span class="pill">Last action: <span id="lastAction">—</span></span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="row" style="margin-bottom:10px">
+            <input id="noteInput" type="text" placeholder="Add a quick note (e.g., 'Merged → Unmerged. Water + breath.')" />
+            <button id="addNoteBtn" class="small">Add Note</button>
+          </div>
+          <div id="logList" class="list"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <template id="questItemTpl">
+    <div class="item">
+      <div class="left">
+        <div>
+          <div class="title"></div>
+          <div class="tiny sub"></div>
+        </div>
+      </div>
+      <div class="row">
+        <span class="pill mono">+<span class="xp"></span> XP</span>
+        <button class="small doBtn">Complete</button>
+        <button class="small ghost editBtn">Edit</button>
+        <button class="small ghost delBtn">Delete</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="logItemTpl">
+    <div class="item">
+      <div class="left">
+        <div>
+          <div class="title"></div>
+          <div class="tiny sub"></div>
+        </div>
+      </div>
+      <div class="row">
+        <span class="pill mono"></span>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    // --- Simple state layer (localStorage) ---
+    const LS_KEY = 'calmquest_v1';
+    const DEFAULTS = {
+      xp: 0, streak: 0, lastDate: null, lastAction: null,
+      quests: [
+        { id: uid(), title: 'Name the merge → sensory reset', xp: 10, hint: 'Notice “I merged”, hand to chest, breathe 4/6', quick:true },
+        { id: uid(), title: 'Body first, story later', xp: 10, hint: 'Ground (5 senses), then reframe after 20m', quick:true },
+        { id: uid(), title: 'Off-duty rep', xp: 10, hint: '10 min no-monitoring window', quick:true },
+      ],
+      log: []
+    };
+
+    function uid(){return Math.random().toString(36).slice(2,9)}
+
+    function load(){
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw){ save(DEFAULTS); return {...DEFAULTS}; }
+      try{ return JSON.parse(raw); }catch(e){ console.warn('Bad JSON, resetting'); save(DEFAULTS); return {...DEFAULTS}; }
+    }
+    function save(state){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+    let state = load();
+
+    // daily streak update
+    function todayStr(d=new Date()){ return d.toISOString().slice(0,10); }
+    function updateStreak(){
+      const today = todayStr();
+      if(!state.lastDate){ state.lastDate = today; save(state); return; }
+      if(state.lastDate !== today){
+        // if yesterday, +1, else reset
+        const last = new Date(state.lastDate);
+        const t = new Date(today);
+        const diff = (t - last) / 86400000;
+        if(diff === 1){ state.streak = (state.streak||0) + 1; }
+        else if(diff > 1){ state.streak = 0; }
+        state.lastDate = today;
+        save(state);
+      }
+    }
+
+    updateStreak();
+
+    // XP/Level math
+    function levelFromXP(xp){
+      // Smooth curve: next level every ~100 XP initially, then scales
+      return Math.max(1, Math.floor(Math.sqrt((xp||0)/100))+1);
+    }
+    function nextLevelXP(lvl){ return (Math.max(1,lvl-1))**2 * 100; }
+    function currLevelBaseXP(lvl){ return Math.max(0,(lvl-2)**2 * 100); }
+
+    // Render helpers
+    const $ = s=>document.querySelector(s);
+    const $$ = s=>Array.from(document.querySelectorAll(s));
+
+    function renderStats(){
+      const lvl = levelFromXP(state.xp);
+      $('#xp').textContent = state.xp;
+      $('#level').textContent = lvl;
+      $('#streak').textContent = state.streak||0;
+      const base = currLevelBaseXP(lvl);
+      const target = nextLevelXP(lvl);
+      const pct = Math.min(100, Math.round(((state.xp - base)/(target - base))*100));
+      $('#xpBar').style.width = isFinite(pct)? pct+'%':'0%';
+      $('#today').textContent = todayStr();
+      $('#lastAction').textContent = state.lastAction || '—';
+
+      // quick actions (from quests flagged quick)
+      const qa = $('#quickActions');
+      qa.innerHTML = '';
+      state.quests.filter(q=>q.quick).forEach(q=>{
+        const b = document.createElement('button');
+        b.className = 'small';
+        b.textContent = `+${q.xp} ${q.title}`;
+        b.onclick = ()=>completeQuest(q.id);
+        qa.appendChild(b);
+      })
+    }
+
+    function renderQuests(){
+      const list = $('#questList');
+      list.innerHTML='';
+      state.quests.forEach(q=>{
+        const tpl = document.getElementById('questItemTpl');
+        const node = tpl.content.firstElementChild.cloneNode(true);
+        node.querySelector('.title').textContent = q.title;
+        node.querySelector('.sub').textContent = q.hint || '';
+        node.querySelector('.xp').textContent = q.xp;
+        node.querySelector('.doBtn').onclick = ()=>completeQuest(q.id);
+        node.querySelector('.editBtn').onclick = ()=>editQuest(q.id);
+        node.querySelector('.delBtn').onclick = ()=>deleteQuest(q.id);
+        list.appendChild(node);
+      })
+    }
+
+    function renderLog(){
+      const list = $('#logList');
+      list.innerHTML = '';
+      state.log.slice().reverse().slice(0,100).forEach(entry=>{
+        const tpl = document.getElementById('logItemTpl');
+        const node = tpl.content.firstElementChild.cloneNode(true);
+        node.querySelector('.title').textContent = entry.title;
+        node.querySelector('.sub').textContent = new Date(entry.time).toLocaleString();
+        node.querySelector('.pill').textContent = entry.meta || '';
+        list.appendChild(node);
+      })
+    }
+
+    function addLog(title, meta=''){
+      state.log.push({ id: uid(), time: Date.now(), title, meta });
+      if(state.log.length>1000) state.log = state.log.slice(-1000);
+      save(state); renderLog();
+    }
+
+    function completeQuest(id){
+      const q = state.quests.find(x=>x.id===id);
+      if(!q) return;
+      state.xp = (state.xp||0) + Number(q.xp||0);
+      state.lastAction = `+${q.xp} XP · ${q.title}`;
+      save(state);
+      renderStats();
+      addLog(`Completed: ${q.title}`, `+${q.xp} XP`);
+    }
+
+    function editQuest(id){
+      const q = state.quests.find(x=>x.id===id);
+      if(!q) return;
+      const title = prompt('Quest name:', q.title);
+      if(!title) return;
+      const xp = Number(prompt('XP value:', q.xp)||q.xp);
+      const hint = prompt('Hint/description (optional):', q.hint||'')||'';
+      const quick = confirm('Show as Quick Action button? OK = yes, Cancel = no');
+      Object.assign(q,{title,xp, hint, quick});
+      save(state); renderQuests(); renderStats();
+    }
+
+    function deleteQuest(id){
+      if(!confirm('Delete this quest?')) return;
+      state.quests = state.quests.filter(x=>x.id!==id);
+      save(state); renderQuests();
+    }
+
+    function addQuest(){
+      const title = prompt('Quest name (e.g., "Off-duty rep"):');
+      if(!title) return;
+      const xp = Number(prompt('XP value (e.g., 10):', '10')||10);
+      const hint = prompt('Hint/description:', '')||'';
+      const quick = confirm('Show as Quick Action button? OK = yes, Cancel = no');
+      state.quests.push({ id: uid(), title, xp, hint, quick });
+      save(state); renderQuests(); renderStats();
+    }
+
+    // Off-duty timer (10 minutes)
+    let offDutyTimer = null;
+    function startOffDuty(){
+      if(offDutyTimer){ return; }
+      const dur = 10*60*1000; // 10 minutes
+      const endAt = Date.now()+dur;
+      addLog('Off-duty started', '10 minutes');
+      state.lastAction = 'Off-duty (10m)'; save(state); renderStats();
+
+      const btn = document.getElementById('offDutyBtn');
+      const tick = ()=>{
+        const left = endAt - Date.now();
+        if(left<=0){
+          clearInterval(offDutyTimer); offDutyTimer=null; btn.textContent='🛑 Go Off Duty (10m)';
+          state.xp += 10; save(state); renderStats();
+          addLog('Off-duty complete', '+10 XP');
+          return;
+        }
+        const m = Math.floor(left/60000), s = Math.floor((left%60000)/1000);
+        btn.textContent = `Off-duty ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      }
+      offDutyTimer = setInterval(tick, 250);
+      tick();
+    }
+
+    function bossFight(){
+      const note = prompt('Boss fight! What helped you stay in the game?');
+      if(note){ addLog('Boss fight survived', note); state.xp += 5; save(state); renderStats(); }
+    }
+
+    function softReset(){
+      if(!confirm('Soft reset keeps quests but clears XP, streak and log. Proceed?')) return;
+      state.xp = 0; state.streak = 0; state.log = []; state.lastAction = null; state.lastDate = todayStr();
+      save(state); renderStats(); renderLog();
+    }
+
+    // Export/Import
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download='calmquest.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+    function importJSON(file){
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        try{
+          const data = JSON.parse(e.target.result);
+          state = Object.assign({}, DEFAULTS, data);
+          save(state); renderAll();
+        }catch(err){ alert('Invalid JSON'); }
+      };
+      reader.readAsText(file);
+    }
+
+    // Wire up
+    document.getElementById('addQuestBtn').onclick = addQuest;
+    document.getElementById('offDutyBtn').onclick = startOffDuty;
+    document.getElementById('bossBtn').onclick = bossFight;
+    document.getElementById('resetBtn').onclick = softReset;
+    document.getElementById('addNoteBtn').onclick = ()=>{
+      const v = document.getElementById('noteInput').value.trim();
+      if(!v) return; addLog(v); document.getElementById('noteInput').value='';
+    };
+    document.getElementById('exportBtn').onclick = exportJSON;
+    document.getElementById('importBtn').onclick = ()=>document.getElementById('fileInput').click();
+    document.getElementById('fileInput').addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(f) importJSON(f);
+      e.target.value='';
+    });
+
+    function renderAll(){ renderStats(); renderQuests(); renderLog(); }
+    renderAll();
+  </script>
+</body>
+</html>
